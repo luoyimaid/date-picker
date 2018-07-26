@@ -6,7 +6,10 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, './dist'),
     publicPath: '/dist/',
-    filename: 'build.js'
+    filename: 'date-picker.js',
+    library: 'ly_datepicker',
+    libraryTarget: 'umd',
+    umdNamedDefine: true
   },
   module: {
     rules: [

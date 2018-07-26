@@ -1,17 +1,17 @@
 <template>
     <div class="vue-date-picker" @mouseover="startMouseOver" @mouseout="penalHidden">
         <!-- 输入框 -->
-        <input type="text" @focus="penalDisplay" @blur="penalHidden" :value="value" autocomplete="off" :name='filed' :id="filed">
+        <input type="text" @focus="penalDisplay" @blur="penalHidden" :value="value" autocomplete="off" :name='filed' :id="filed" v-el='input'>
         <!-- 选择框 -->
         <div class="vue-date-picker-penals" v-show="datepenalShow || monthpenalShow">
             <!-- 日期选择 -->
             <div class="vue-date-picker-datepenal" v-show="datepenalShow">
                 <div class="vue-date-picker-datepenal-header">
-                    <a class="date-picker-header-prev" @click="prevMonth">&lt;</a>
-                    <span class="date-picker-header-choose" @click="chooseMonth">{{year}}年{{month + 1}}月</span>
-                    <a class="date-picker-header-next" @click="nextMonth">&gt;</a>
+                    <a class="date-picker-datepenal-header-prev" @click="prevMonth">&lt;</a>
+                    <span class="date-picker-datepenal-header-choose" @click="chooseMonth">{{year}}年{{month + 1}}月</span>
+                    <a class="date-picker-datepenal-header-next" @click="nextMonth">&gt;</a>
                 </div>
-                <table class="vue-date-picker-datepenal-table">
+                <table class="vue-date-picker-datepenal-tb">
                     <thead>
                         <tr>
                             <th v-for="items in langConf.week" :key="items">{{items}}</th>
@@ -22,7 +22,7 @@
                             <td v-for="(dIndex, d) in mIndex" 
                                 :key="d" 
                                 track-by='$index' 
-                                @click="chooseDay(d, $event)">
+                                @click="chooseDay(dIndex, $event)">
                                 <span>{{ dIndex }}</span>
                             </td>
                         </tr>
@@ -32,11 +32,23 @@
             <!-- 月份选择 -->
             <div class="vue-date-picker-monthpenal" v-show="monthpenalShow">
                 <div class="vue-date-picker-monthpenal-header">
-
+                    <a class="date-picker-monthpenal-header-prev" @click="prevYear">&lt;</a>
+                    <span class="date-picker-monthpenal-header-choose">{{ year }}</span>
+                    <a class="date-picker-monthpenal-header-next" @click="nextYear">&gt;</a>
                 </div>
-                <div class="vue-date-picker-monthpenal-table">
-
-                </div>
+                <table class="vue-date-picker-monthpenal-tb">
+                    <!-- col标签为表格中一个或多个列定义属性值。 -->
+                    <col width='33%'>
+                    <col width='33%'>
+                    <col width='33%'>
+                    <tbody>
+                        <tr v-for="season in monthArr" :key="season" track-by='$index'>
+                            <td v-for="m in season" :key="m" track-by='$index' @click="chooseContentMonth(m.id)">
+                                <span>{{ m.name }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -74,6 +86,7 @@
         }
     }
 export default {
+    name: 'ly-date-picker',
     props: {
         filed: {
             type: String,
@@ -81,7 +94,7 @@ export default {
         },
         format: {
             type: String,
-            default: ''
+            default: 'yyyy-mm-dd'
         },
         value: {
             type: String,
@@ -105,6 +118,10 @@ export default {
             default: function() {
                 return {};
             }
+        },
+        placeholder: {
+            type: String,
+            default: ''
         }
     },
     data () {
@@ -138,13 +155,27 @@ export default {
         }
     },
     computed: {
+        // 3*4 的日期二维数组
+        monthArr() {
+            let {month} = this.langConf;
+            let res = [];
+            for(let i=0; i <= 3; i++) {
+                let temp = [];
+                for(let j=1; j <= 4; j++) {
+                    let id = i * 3 + j - 1;
+                    temp.push({id, name:month[id]});
+                }
+                res.push(temp);
+            }
+            return res;
+        },
         // 当前日期
         current() {
             let {value, noToday} = this;
             let dateObj;
-            let year = '0000';
-            let month = '00';
-            let day = '00';
+            let year;
+            let month;
+            let day;
             if(value) {
                 return new Date(value);
             } else if(!noToday) {
@@ -257,8 +288,18 @@ export default {
         },
         // 鼠标离开日期选择器一段时间，关闭面板
         penalHidden: function(e) {
-            // this.datepenalShow = false;
-            // this.monthpenalShow = false;
+            let that = this;
+            // console.log(that.e);
+			// let inputEle = that.$els.input;
+				if(e.type == 'mouseout') {
+					that.isMouseOver = false;
+				}
+				setTimeout(function() {
+                    //  && inputEle != document.activeElement
+					if (!that.isMouseOver) {
+						that.immPenalHidden();
+					}
+				}, 600);
         },
         // 选择日期
         chooseDay: function(d) {
@@ -276,7 +317,21 @@ export default {
             this.isMouseOver = true;
             this.datepenalShow = false;
             this.monthpenalShow = false;
-            this.$dispatch('datepickerEnd', this.field);
+            // this.$dispatch('datepickerEnd', this.field);
+        },
+        prevYear: function() {
+            this.year --;
+        },
+        nextYear: function() {
+            this.year ++;
+        },
+        chooseContentMonth: function(m) {
+            let {year} = this;
+            if(this.dateIsValid({year,month:m})) {
+                this.month = m;
+                this.datepenalShow = true;
+                this.monthpenalShow = false;
+            }
         }
     }
 }
